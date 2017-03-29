@@ -3,6 +3,10 @@ Development of PEG grammar to parse [GIFT (quiz question) file format](https://e
 
 Initial hacking done using https://pegjs.org/online. The GIFT.pegjs file goes on the left and the test GIFT goes on the right. Note that nothing is saved in this environment (you must copy-paste back to your own files).
 
+# Demo (under development)
+
+- [Demo](https://tobiashochguertel.github.io/GIFT-grammar-PEG.js/editor/index.html)
+
 ## Automated regression tests
 
 There are [dynamically generated tests using Mocha](https://mochajs.org/#dynamically-generating-tests) from sample GIFT/JSON files in `./test/questions/`. 
