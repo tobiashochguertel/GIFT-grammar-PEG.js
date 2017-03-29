@@ -1,0 +1,144 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>GIFT editor for Concrete</title>
+    <script type="text/javascript" src="javascript/Common/jquery.js"></script>
+    <script type="text/javascript" src="javascript/Common/jsdump.js"></script>
+    <script type="text/javascript" src="javascript/Parser/peg-0.10.0.min.js"></script>
+    <script type="text/javascript" src="javascript/CodeCompletion/tx-content-assist/tx_utils.js"></script>
+    <script type="text/javascript" src="javascript/CodeCompletion/tx-content-assist/EventDispatcher.js"></script>
+    <script type="text/javascript" src="javascript/CodeCompletion/tx-content-assist/TextViewer.js"></script>
+    <script type="text/javascript" src="javascript/CodeCompletion/tx-content-assist/ContentAssist.js"></script>
+    <script type="text/javascript" src="javascript/CodeCompletion/tx-content-assist/CompletionProposal.js"></script>
+    <script type="text/javascript" src="javascript/CodeCompletion/ContentAssistProcessor.js"></script>
+    <script type="text/javascript" src="javascript/CodeCompletion/ConcreteContentAssist.js"></script>
+    <link rel="stylesheet" type="text/css" href="stylesheet/CodeCompletion/content-assist.css" media="all" />
+    <link rel="stylesheet" type="text/css" href="stylesheet/layout.css" media="all" />
+</head>
+<body>
+<div id="container">
+    <h2>Content assisted free text editor for Concrete metamodel</h2>
+    <p><a href="http://concrete-editor.org/">Concrete editor</a> is powerful web-based DSL editor.
+                                                                 It uses structured approach where appearance can be highly customized with HTML/CSS
+                                                                 templates.
+                                                                 Creation of a language is based on defining specific metamodel and optionally javascript
+                                                                 plugins.
+    </p>
+    <div id="result-tree-wrapper">
+        <h3>Concrete metamodel result tree</h3>
+        <pre id="result-tree">No result tree.</pre>
+    </div>
+    <div id="input-wrapper">
+        <h3>Free text input</h3>
+        <textarea rows="25" cols="50" id="editor">//-----------------------------------------//
+// Examples from gift/format.php.
+//-----------------------------------------//
+
+Who's buried in Grant's tomb?{~Grant ~Jefferson =no one}
+
+Grant is {~buried =entombed ~living} in Grant's tomb.
+
+Grant is buried in Grant's tomb.{FALSE}
+
+Who's buried in Grant's tomb?{=no one =nobody}
+
+When was Ulysses S. Grant born?{#1822:5}
+
+Match the following countries with their corresponding
+capitals.{=Canada->Ottawa =Italy->Rome =Japan->Tokyo}
+
+//-----------------------------------------//
+// More complicated examples.
+//-----------------------------------------//
+
+::Grant's Tomb::Grant is {
+      ~buried#No one is buried there.
+      =entombed#Right answer!
+      ~living#We hope not!
+} in Grant's tomb.
+
+Difficult multiple choice question.{
+     ~wrong answer           #comment on wrong answer
+     ~%50%half credit answer #comment on answer
+     =full credit answer     #well done!}
+
+::Jesus' hometown (Short answer ex.):: Jesus Christ was from {
+     =Nazareth#Yes! That's right!
+     =%75%Nazereth#Right, but misspelled.
+     =%25%Bethlehem#He was born here, but not raised here.
+}.
+
+//this comment will be ignored by the filter
+::Numerical example::
+When was Ulysses S. Grant born? {#
+     =1822:0      #Correct! 100% credit
+     =%50%1822:2  #He was born in 1822.
+                  You get 50% credit for being close.
+}</textarea>
+        <div id="message" />
+    </div>
+
+</div>
+
+<div id="loadParser" />
+
+<script type="text/javascript">
+  var grammer = "";
+  var parser = undefined;
+
+  function getInstance() {
+    // read grammar and create parser
+    // var grammar = fs.readFileSync('../GIFT.pegjs', 'utf-8');
+    jQuery.ajax("../GIFT.pegjs")
+      .done(function (data, textStatus, jqXHR) {
+        console.log("Grammer content from file 'GIFT.pegjs' loaded.");
+        grammer = data;
+        parser = peg.generate(grammer);
+        if (parser !== undefined) {
+          console.log("PEGJS Parser created from grammer.");
+          parseResult();
+        }
+      })
+      .fail(function () {
+        console.error("error");
+      });
+  }
+
+  /* <![CDATA[ */
+  function parseResult() {
+    parsing = true;
+    var previous = contextParserConfig;
+    contextParserConfig = {laxParsing: false, failOnCursor: true};
+    try {
+      var resultTree = parser.parse($("#editor").val());
+      $("#result-tree").text(jsDump.parse(resultTree));
+      $("#message").text("Text parsed succesfully.");
+      $("#message").removeClass("error").addClass("success");
+    } catch (e) {
+      $("#message").text(buildErrorMessage(e));
+      $("#message").removeClass("success").addClass("error");
+    }
+    contextParserConfig = previous;
+    setTimeout(function () {
+      if (!parsing) parseResult();
+    }, 1000);
+    parsing = false;
+  }
+
+  function buildErrorMessage(e) {
+    return e.line !== undefined && e.column !== undefined
+      ? "Line " + e.line + ", column " + e.column + ": " + e.message
+      : e.message;
+  }
+
+  getInstance();
+
+  var parsing = false;
+  var contextParserConfig;
+  // Constructs the code-completion feature...
+  new ConcreteContentAssist(document.getElementById('editor'));
+
+  /* ]]> */</script>
+</body>
+</html>
